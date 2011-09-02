@@ -5,6 +5,8 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.prealpha.tyrc.shared.Message;
+
 public class Server extends Thread {
 	public static final int SERVER_PORT = 1337;
 	private boolean isRunning;
@@ -55,7 +57,7 @@ public class Server extends Thread {
 		clientSocketReaders.add(ncon);
 		ncon.start();
 		try {
-			ncon.writeTo("welcome\n");
+			ncon.writeTo(new Message(Message.Type.MESSAGE,"Ty Overby", "Hello"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

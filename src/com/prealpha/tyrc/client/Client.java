@@ -1,17 +1,18 @@
 package com.prealpha.tyrc.client;
-import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.UnknownHostException;
+
+import com.prealpha.tyrc.shared.Message;
 
 
 public class Client {
 	Socket socket;
 
 	DataOutputStream out;
-	BufferedReader in;
+	DataInputStream in;
 
 	public Client(){
 		startup();
@@ -23,7 +24,7 @@ public class Client {
 		try {
 			this.socket=new Socket("localhost",1337);
 			this.out = new DataOutputStream(this.socket.getOutputStream());
-			this.in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
+			this.in = new DataInputStream(this.socket.getInputStream());
 
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
@@ -33,11 +34,12 @@ public class Client {
 	}
 
 	private void listen(){
+		byte[] b = new byte[100000];
 		while(true){
-			String get;
 			try {
-				get = in.readLine();
-				System.err.println(get);
+				in.readFully(b);
+				
+				System.err.println(Message.decode(b).message);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

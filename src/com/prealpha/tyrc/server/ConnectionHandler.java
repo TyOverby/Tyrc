@@ -1,10 +1,10 @@
 package com.prealpha.tyrc.server;
-import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
 import java.net.Socket;
+
+import com.prealpha.tyrc.shared.Message;
 
 
 public class ConnectionHandler extends Thread {
@@ -12,15 +12,15 @@ public class ConnectionHandler extends Thread {
 	private final Server server;
 
 
-	PrintStream out;
-	BufferedReader in;
+	DataOutputStream out;
+	DataInputStream in;
 	public ConnectionHandler(Socket clientSocket,Server server){
 		this.clientSocket=clientSocket;
 		this.server=server;
 
 		try{
-			this.out = new PrintStream(this.clientSocket.getOutputStream());
-			this.in = new BufferedReader(new InputStreamReader((this.clientSocket.getInputStream())));
+			this.out = new DataOutputStream(this.clientSocket.getOutputStream());
+			this.in = new DataInputStream(this.clientSocket.getInputStream());
 		}
 		catch(IOException ioe){
 			this.kill();
@@ -30,13 +30,14 @@ public class ConnectionHandler extends Thread {
 
 	private void listen(){
 		System.err.println("listening");
+		byte[] b = new byte[100000];
 
 		while(true){
 			if(clientSocket.isClosed()){
 				break;
 			}
 			try{
-				System.err.println(in.readLine());
+				// TODO: read data from in
 			}
 			catch(java.net.SocketException se){
 				break;
@@ -47,8 +48,8 @@ public class ConnectionHandler extends Thread {
 		}
 	}
 
-	public void writeTo(String message) throws IOException{
-		out.println(message);
+	public void writeTo(Message m) throws IOException{
+		out.write(m.toBytes());
 	}
 
 	private void kill(){

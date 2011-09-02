@@ -10,24 +10,26 @@ public class Message {
 	
 	private static final int SIZE_BYTE = 1;
 	private static final int SIZE_INT = 4;
-	private static final int SIZE_CHAR = 2;
 	
 	public final Type type;
 	public final String name;
 	public final String message;
 	
-	private Message(Type type, String name, String message){
+	public Message(Type type, String name, String message){
 		this.type = type;
 		this.name = name;
 		this.message = message;
 	}
 	
-	public static byte[] bytesFromMessage(Message m){
+	public byte[] toBytes(){
+		Message m = this;
+		
 		int capacity = 0;
 		
-		byte[] nameBytes = m.name.getBytes(Charset.forName("Unicode"));
-		byte[] messageBytes = m.message.getBytes(Charset.forName("Unicode"));
+		byte[] nameBytes = stringToByte(m.name);
+		byte[] messageBytes = stringToByte(m.message);
 		
+		capacity += SIZE_INT; // total length
 		capacity += SIZE_BYTE; // type
 		capacity += SIZE_INT; // name length
 		capacity += nameBytes.length; //name
@@ -36,6 +38,8 @@ public class Message {
 		
 		ByteBuffer buff = ByteBuffer.allocate(capacity);
 		
+		// total length
+		buff.putInt(capacity);
 		// type
 		buff.put(getType(m.type));
 		// name length
@@ -56,6 +60,8 @@ public class Message {
 		String msg;
 		
 		ByteBuffer buff = ByteBuffer.wrap(incomingMessage);
+		
+		buff.getInt();
 		
 		type = getType(buff.get());
 		
@@ -109,7 +115,7 @@ public class Message {
 	
 	public static void main(String... args){
 		Message test = new Message(Type.MESSAGE,"Tyler Jensen","Sup guys, how is everything going.");
-		byte[] bytes = (bytesFromMessage(test));
+		byte[] bytes = test.toBytes();
 		for(byte b:bytes){
 			System.out.print(b+" ");
 		}
