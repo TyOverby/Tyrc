@@ -8,6 +8,10 @@ public class Message {
 		JOIN, MESSAGE, DISCONNECT, UNKNOWN
 	}
 	
+	private static final int SIZE_BYTE = 1;
+	private static final int SIZE_INT = 4;
+	private static final int SIZE_CHAR = 2;
+	
 	public final Type type;
 	public final String name;
 	public final String message;
@@ -19,28 +23,47 @@ public class Message {
 	}
 	
 	public static byte[] bytesFromMessage(Message m){
-		ByteBuffer buff = ByteBuffer.allocate(1+1+m.name.length()+1+m.message.length());
+		int capacity = 0;
+		
+		byte[] nameBytes = m.name.getBytes(Charset.forName("Unicode"));
+		byte[] messageBytes = m.message.getBytes(Charset.forName("Unicode"));
+		
+		capacity += SIZE_BYTE; // type
+		capacity += SIZE_INT; // name length
+		capacity += nameBytes.length; //name
+		capacity += SIZE_INT; // message length
+		capacity += messageBytes.length; // message
+		
+		ByteBuffer buff = ByteBuffer.allocate(capacity);
+		
+		// type
 		buff.put(getType(m.type));
-		buff.put((byte)m.name.length());
-		buff.put(m.name.getBytes(Charset.forName("ASCII")));
-		buff.put((byte)m.message.length());
-		buff.put(m.message.getBytes(Charset.forName("ASCII")));
+		// name length
+		buff.putInt(nameBytes.length);
+		// name
+		buff.put(nameBytes);
+		//message length
+		buff.putInt(messageBytes.length);
+		//message
+		buff.put(messageBytes);
 		
 		return buff.array();
 	}
 
 	public static Message decode(byte[] incomingMessage){
-		String name = "";
-		String msg = "";
+		Type type;
+		String name;
+		String msg;
 		
-		int curpos = 0;
-		Type type = getType(incomingMessage[curpos]);
-		curpos += 1;
+		ByteBuffer buff = ByteBuffer.wrap(incomingMessage);
 		
-		name = getString(incomingMessage,(byte)curpos);
-		curpos+=name.length()+1;
+		type = getType(buff.get());
 		
-		msg = getString(incomingMessage,(byte)curpos);
+		int nameLength = buff.getInt();
+		name = getString(buff,nameLength);
+		
+		int msgLength = buff.getInt();
+		msg = getString(buff, msgLength);
 		
 		return new Message(type,name,msg);
 	}
@@ -71,21 +94,25 @@ public class Message {
 		}
 	}
 	
-	private static String getString(byte[] totalBytes,byte startingpos){
-		short stringLength = totalBytes[startingpos];
-		
-		byte[] stringBytes = new byte[stringLength];
-		for(int o=startingpos+1,n=0;n<stringLength;n++,o++){
-			stringBytes[n]=totalBytes[o];
+	private byte[] stringToByte(String s){
+		return s.getBytes(Charset.forName("Unicode"));
+	}
+	
+	private static String getString(ByteBuffer buff,int length){
+		byte[] dstBytes = new byte[length];
+		for(int i=0;i<length;i++){
+			dstBytes[i]=buff.get();
+			//System.out.println(dstBytes[i]);
 		}
-		
-		Charset charset = Charset.forName("ASCII");
-		return new String(stringBytes,charset);
+		return new String(dstBytes,Charset.forName("Unicode"));
 	}
 	
 	public static void main(String... args){
-		Message test = new Message(Type.MESSAGE,"Ty","hey guys");
+		Message test = new Message(Type.MESSAGE,"Tyler Jensen","Sup guys, how is everything going.");
 		byte[] bytes = (bytesFromMessage(test));
+		for(byte b:bytes){
+			System.out.print(b+" ");
+		}
 		Message test2 = decode(bytes);
 		
 		System.out.println(test2.type);
