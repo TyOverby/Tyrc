@@ -4,17 +4,24 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 
 import com.prealpha.tyrc.shared.Message;
 
 
-public class Client {
+public class Client extends Thread{
 	Socket socket;
+
+	private ClientMessageHandler messageHandler;
 
 	DataOutputStream out;
 	DataInputStream in;
 
-	public Client(){
+	public void setMessageHandler(ClientMessageHandler m){
+		this.messageHandler = m;
+	}
+
+	public void run(){
 		startup();
 		listen();
 		shutdown();
@@ -34,17 +41,30 @@ public class Client {
 	}
 
 	private void listen(){
-		byte[] b = new byte[100000];
+		ByteBuffer buff ;
 		while(true){
 			try {
-				in.readFully(b);
-				
-				System.err.println(Message.decode(b).message);
+				int size = in.readInt();
+				buff = ByteBuffer.allocate(size);
+				buff.putInt(size);
+				for(int i=0;i<size-4;i++){
+					byte cur = in.readByte();
+					buff.put(cur);
+				}
+
+				messageHandler.dealWithIt(Message.decode(buff.array()));
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			
+
 		}
+	}
+
+	public void say(byte[] b) throws IOException{
+		out.write(b);
+	}
+	public void say(Message m) throws IOException{
+		say(m.toBytes());
 	}
 
 	private void shutdown(){
@@ -57,10 +77,5 @@ public class Client {
 				System.err.println("failed to close client socket");
 			}
 		}
-	}
-
-
-	public static void main(String...args){
-		new Client();
 	}
 }

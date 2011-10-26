@@ -6,16 +6,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.prealpha.tyrc.shared.Message;
+import com.prealpha.tyrc.shared.Message.Type;
 
 public class Server extends Thread {
-	public static final int SERVER_PORT = 1337;
+	public final int SERVER_PORT;
 	private boolean isRunning;
 
 	private ListenerThread listenerThread;
+	private final ServerMessageHandler smh;
 
 	private ServerSocket serverSocket;
-	private List<ConnectionHandler> clientSocketReaders = new ArrayList<ConnectionHandler>();
+	private List<ConnectionHandler> connectionHandlers = new ArrayList<ConnectionHandler>();
 
+	public Server(int port,ServerMessageHandler smh){
+		this.SERVER_PORT=port;
+		this.smh = smh;
+		this.start();
+	}
+	
 	private void startup(){
 		System.out.println("startup()");
 
@@ -54,31 +62,47 @@ public class Server extends Thread {
 
 	protected void addClient(Socket clientSocket){
 		ConnectionHandler ncon = new ConnectionHandler(clientSocket,this);
-		clientSocketReaders.add(ncon);
+		connectionHandlers.add(ncon);
 		ncon.start();
 		try {
-			ncon.writeTo(new Message(Message.Type.MESSAGE,"Ty Overby", "Hello"));
+			ncon.say(new Message(Message.Type.WELCOME,"[Server]", "Welcome"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		System.out.println("added client");
 	}
 	protected void removeClient(ConnectionHandler socketReader){
-		this.clientSocketReaders.remove(socketReader);
+		this.connectionHandlers.remove(socketReader);
+		if(socketReader.name!=null){
+			this.say(new Message(Type.DISCONNECT,socketReader.name,"has disconnected"));
+		}else{
+			this.say(new Message(Type.DISCONNECT,"a user","has disconnected"));
+		}
 	}
 	public boolean isRunning(){
 		return this.isRunning;
+	}
+
+	public void say(Message m){
+		this.say(m.toBytes());
+		smh.dealWithIt(m);
+	}
+
+	public void say(byte[] b){
+		for(ConnectionHandler c:this.connectionHandlers){
+			try {
+				c.say(b);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		smh.dealWithIt(Message.decode(b));
 	}
 
 	public void run(){
 		startup();
 		listen();
 		shutdown();
-	}
-
-	public static void main(String...args){
-		Server server = new Server();
-		server.run();
 	}
 }

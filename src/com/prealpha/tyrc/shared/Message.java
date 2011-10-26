@@ -5,7 +5,7 @@ import java.nio.charset.Charset;
 
 public class Message {
 	public enum Type{
-		JOIN, MESSAGE, DISCONNECT, UNKNOWN
+		JOIN, MESSAGE, DISCONNECT, UNKNOWN, WELCOME
 	}
 	
 	private static final int SIZE_BYTE = 1;
@@ -82,6 +82,8 @@ public class Message {
 			return 0x01;
 		case DISCONNECT:
 			return 0x02;
+		case WELCOME:
+			return 0x03;
 		default:
 			return 0x03;
 		}
@@ -95,6 +97,8 @@ public class Message {
 			return Type.MESSAGE;
 		case 0x02:
 			return Type.DISCONNECT;
+		case 0x03:
+			return Type.WELCOME;
 		default:
 			return Type.UNKNOWN;
 		}
@@ -114,7 +118,7 @@ public class Message {
 	}
 	
 	public static void main(String... args){
-		Message test = new Message(Type.MESSAGE,"Tyler Jensen","Sup guys, how is everything going.");
+		Message test = new Message(Type.JOIN,"Tyler Jensen","Sup guys, how is everything going.");
 		byte[] bytes = test.toBytes();
 		for(byte b:bytes){
 			System.out.print(b+" ");

@@ -3,6 +3,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 
 import com.prealpha.tyrc.shared.Message;
 
@@ -10,6 +11,8 @@ import com.prealpha.tyrc.shared.Message;
 public class ConnectionHandler extends Thread {
 	private final Socket clientSocket;
 	private final Server server;
+
+	public String name;
 
 
 	DataOutputStream out;
@@ -30,14 +33,26 @@ public class ConnectionHandler extends Thread {
 
 	private void listen(){
 		System.err.println("listening");
-		byte[] b = new byte[100000];
+		ByteBuffer buff;
 
 		while(true){
 			if(clientSocket.isClosed()){
 				break;
 			}
 			try{
-				// TODO: read data from in
+				int size = in.readInt();
+				buff = ByteBuffer.allocate(size);
+				buff.putInt(size);
+				for(int i=0;i<size-4;i++){
+					byte cur = in.readByte();
+					buff.put(cur);
+				}
+				this.server.say(buff.array());
+
+				if(this.name==null){
+					Message m = Message.decode(buff.array());
+					this.name=m.name;
+				}
 			}
 			catch(java.net.SocketException se){
 				break;
@@ -48,8 +63,11 @@ public class ConnectionHandler extends Thread {
 		}
 	}
 
-	public void writeTo(Message m) throws IOException{
-		out.write(m.toBytes());
+	public void say(byte[] b) throws IOException{
+		out.write(b);
+	}
+	public void say(Message m) throws IOException{
+		say(m.toBytes());
 	}
 
 	private void kill(){
